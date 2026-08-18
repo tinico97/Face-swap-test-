@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: dragon-face-test
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: QUALITY
+        value: medium
