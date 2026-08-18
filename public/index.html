@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dragon Hero — Test visage</title>
+<style>
+:root{--bg:#081221;--panel:#0e1b31;--gold:#f3bf59;--muted:#9aacbf}
+*{box-sizing:border-box}
+body{margin:0;background:
+radial-gradient(circle at 15% 0%,rgba(243,191,89,.12),transparent 28%),
+linear-gradient(180deg,#101f38,var(--bg));color:white;font-family:Inter,system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:760px;margin:auto;padding:22px 14px 60px}
+.top{padding:18px 4px 24px}
+.eyebrow{font-size:10px;letter-spacing:.22em;color:var(--gold);font-weight:900}
+h1{font-family:Georgia,serif;font-weight:500;font-size:clamp(38px,10vw,64px);line-height:.98;letter-spacing:-.04em;margin:9px 0 14px}
+.sub{color:var(--muted);line-height:1.6;font-size:14px;max-width:600px}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:26px;padding:18px;box-shadow:0 25px 80px rgba(0,0,0,.28)}
+.poster{border-radius:20px;overflow:hidden;aspect-ratio:4/5;background:#091323;margin-bottom:18px}
+.poster img{width:100%;height:100%;object-fit:cover;display:block}
+.upload{min-height:180px;border:1px dashed rgba(255,255,255,.2);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer;position:relative;overflow:hidden}
+.upload input{display:none}.upload b{font-size:15px}.upload span{font-size:11px;color:#8191a8}
+.upload .plus{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#17243a;font-size:27px}
+.upload img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.upload.has-photo:after{content:"Changer la photo";position:absolute;right:10px;bottom:10px;padding:8px 11px;background:rgba(4,10,20,.78);border-radius:99px;font-size:11px}
+button{width:100%;margin-top:14px;border:0;border-radius:99px;min-height:54px;font-size:14px;font-weight:850;background:linear-gradient(135deg,#ffd67c,#e9a93b);color:#15233a}
+button:disabled{opacity:.38}
+.status{margin-top:13px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.045);font-size:12px;color:#b9c5d3;line-height:1.5;display:none}
+.status.error{display:block;background:rgba(255,77,77,.09);border:1px solid rgba(255,77,77,.18);color:#ffc4c4}
+.status.ok{display:block;background:rgba(72,202,125,.08);border:1px solid rgba(72,202,125,.18);color:#c1f3d4}
+.loader{display:none;text-align:center;padding:24px}.spinner{width:44px;height:44px;margin:auto;border-radius:50%;border:2px solid rgba(255,255,255,.1);border-top-color:var(--gold);animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}.loader b{display:block;font-family:Georgia,serif;font-size:23px;font-weight:500;margin-top:14px}.loader span{display:block;color:#8798ad;font-size:11px;margin-top:5px}
+.result{display:none;margin-top:18px}.result img{width:100%;display:block;border-radius:20px}.meta{font-size:11px;color:#7f91a8;margin-top:9px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="eyebrow">TEST TECHNIQUE • UN SEUL OBJECTIF</div>
+    <h1>Est-ce que le visage fonctionne ?</h1>
+    <div class="sub">Pas de Shopify, pas de checkout, pas de webhook. Le poster est fixé. Tu uploades une photo et le serveur tente uniquement de remplacer la tête.</div>
+  </div>
+
+  <div class="card">
+    <div class="poster"><img src="/dragon-hero.png" alt="Template Dragon Hero verrouillé"></div>
+
+    <label class="upload" id="uploadBox">
+      <input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
+      <div class="plus">＋</div>
+      <b>Choisir une photo</b>
+      <span>De face • nette • yeux visibles</span>
+      <img id="photoPreview" alt="" hidden>
+    </label>
+
+    <button id="generate" disabled>Tester le remplacement du visage</button>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <b>Traitement du visage…</b>
+      <span>La requête part directement vers le même serveur.</span>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="result" id="result">
+      <img id="resultImg" alt="Résultat">
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+</div>
+<script>
+const photo = document.getElementById("photo");
+const box = document.getElementById("uploadBox");
+const preview = document.getElementById("photoPreview");
+const btn = document.getElementById("generate");
+const loader = document.getElementById("loader");
+const status = document.getElementById("status");
+const result = document.getElementById("result");
+const resultImg = document.getElementById("resultImg");
+const meta = document.getElementById("meta");
+let selected = null;
+
+function setStatus(text, kind=""){
+  status.className = "status " + kind;
+  status.textContent = text;
+  status.style.display = text ? "block" : "none";
+}
+
+photo.addEventListener("change", () => {
+  selected = photo.files?.[0] || null;
+  if(!selected) return;
+  preview.src = URL.createObjectURL(selected);
+  preview.hidden = false;
+  box.classList.add("has-photo");
+  btn.disabled = false;
+  result.style.display = "none";
+  setStatus("Photo prête. Appuie sur le bouton pour lancer le vrai test.", "ok");
+});
+
+btn.addEventListener("click", async () => {
+  if(!selected) return;
+  btn.disabled = true;
+  loader.style.display = "block";
+  result.style.display = "none";
+  setStatus("");
+
+  try{
+    const fd = new FormData();
+    fd.append("photo", selected);
+    const r = await fetch("/api/preview", {method:"POST", body:fd});
+
+    let data;
+    try { data = await r.json(); }
+    catch { throw new Error(`Le serveur a répondu HTTP ${r.status}, mais pas en JSON.`); }
+
+    if(!r.ok || !data.ok){
+      throw new Error(`${data.error || "Erreur serveur"}${data.requestId ? ` • id ${data.requestId}` : ""}`);
+    }
+
+    resultImg.src = data.image;
+    result.style.display = "block";
+    meta.textContent = `Requête ${data.requestId} • ${(data.elapsedMs/1000).toFixed(1)} s`;
+    setStatus("Résultat reçu. Maintenant on juge uniquement la fidélité du visage.", "ok");
+  }catch(err){
+    setStatus(err.message || "Erreur inconnue.", "error");
+  }finally{
+    loader.style.display = "none";
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
